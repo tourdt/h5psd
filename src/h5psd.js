@@ -37,10 +37,36 @@ function rgba2color(value) {
     return '#' + value.slice(0, -1).map(function (value) {
       return (0x100 + parseInt(value)).toString(16).slice(1);
     }).join('').replace(/(.)\1(.)\2(.)\3/, '$1$2$3');
-  }
-  else {
+  } else {
     return 'rgba(' + value.join() + ')';
   }
+}
+
+/* 
+ * 解析matrix矩阵，0°-360°，返回旋转角度 
+ * 当a=b||-a=b,0<=deg<=180 
+ * 当-a+b=180,180<=deg<=270 
+ * 当a+b=180,270<=deg<=360 
+ * 
+ * 当0<=deg<=180,deg=d; 
+ * 当180<deg<=270,deg=180+c; 
+ * 当270<deg<=360,deg=360-(c||d); 
+ * */
+function getmatrix(a, b, c, d, e, f) {
+  var aa = Math.round(180 * Math.asin(a) / Math.PI);
+  var bb = Math.round(180 * Math.acos(b) / Math.PI);
+  var cc = Math.round(180 * Math.asin(c) / Math.PI);
+  var dd = Math.round(180 * Math.acos(d) / Math.PI);
+  var deg = 0;
+  if (aa == bb || -aa == bb) {
+    deg = dd;
+  } else if (-aa + bb == 180) {
+    deg = 180 + cc;
+  } else if (aa + bb == 180) {
+    deg = 360 - cc || 360 - dd;
+  }
+  return deg >= 360 ? 0 : deg;
+  //return (aa+','+bb+','+cc+','+dd);  
 }
 
 /**
@@ -99,7 +125,7 @@ function build(filename, argv) {
       if (nodeInfo.width <= 0 || nodeInfo.height <= 0) { // 无效数据
         return;
       }
-
+      console.log('nodeInfo: ', nodeInfo)
       // 计算 MD5 戳
       var buffer = new Buffer(node.toPng().data);
       var isBackground;
@@ -163,8 +189,7 @@ function build(filename, argv) {
           opacity: nodeInfo.opacity,
           text: nodeInfo.text
         };
-      }
-      else {
+      } else {
         layers.unshift({
           name: nodeInfo.name,
           image: image,
